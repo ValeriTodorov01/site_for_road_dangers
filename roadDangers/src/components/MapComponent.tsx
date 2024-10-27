@@ -129,7 +129,7 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 
 const MapComponent = ({ locations }: { locations: Poi[] }) => {
 	return (
-		<div className="flex self-center items-center justify-center border-2 border-black h-[80%] w-[90%] mt-12">
+		<div className="flex border-2 border-black h-[80%] w-[90%] mt-8 sm:mt-12">
 			<APIProvider
 				apiKey={import.meta.env.VITE_GOOGLE_KEY}
 				onLoad={() => console.log("Maps API has loaded.")}>

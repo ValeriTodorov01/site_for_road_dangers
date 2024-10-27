@@ -141,7 +141,7 @@ function App() {
 
 	return (
 		<>
-			<div className="flex flex-col justify-self-center h-dvh w-dvw">
+			<div className="flex items-center flex-col h-dvh">
 				<Header newPinCB={addNewPin} />
 				<MapComponent locations={locations} />
 			</div>
