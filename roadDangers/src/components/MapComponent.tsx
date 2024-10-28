@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import {
 	APIProvider,
 	Map,
@@ -42,6 +42,7 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 	const [selectedCoordinates, setSelectedCoordinates] = useState<google.maps.LatLngLiteral | null>(null);
 
 
+
 	// Initialize MarkerClusterer, if the map has changed
 	useEffect(() => {
 		if (!map) return;
@@ -56,6 +57,7 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 		clusterer.current?.addMarkers(Object.values(markers));
 	}, [markers]);
 
+
 	const setMarkerRef = (marker: Marker | null, key: string) => {
 		if (marker && markers[key]) return;
 		if (!marker && !markers[key]) return;
@@ -68,6 +70,7 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 				delete newMarkers[key];
 				return newMarkers;
 			}
+
 		});
 	};
 
@@ -153,21 +156,21 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 	);
 };
 
-const MapComponent = ({ locations }: { locations: Poi[] }) => {
+const MapComponent = ({ locations }: { locations: React.MutableRefObject<Poi[]> }) => {
 	return (
 		<div className="flex border-2 border-black h-[80%] w-[90%] mt-8 sm:mt-12">
 			<APIProvider
 				apiKey={import.meta.env.VITE_GOOGLE_KEY}
 				onLoad={() => console.log("Maps API has loaded.")}>
 				<Map
-					defaultZoom={13}
+					defaultZoom={10}
 					mapId="HOE_DETECTION"
 					defaultCenter={{ lat: 42.699855, lng: 23.311125 }}
 					// onCameraChanged={ (ev: MapCameraChangedEvent) =>
 					//     console.log('camera changed:', ev.detail.center, 'zoom:', ev.detail.zoom)
 					// }
 				>
-					<PoiMarkers pois={locations} />
+					<PoiMarkers pois={locations.current || []} />
 				</Map>
 			</APIProvider>
 		</div>

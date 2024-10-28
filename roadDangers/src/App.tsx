@@ -1,7 +1,7 @@
 import Header from "./components/Header";
 import MapComponent, { Poi, Severity } from "./components/MapComponent";
 import Footer from "./components/Footer";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 //https://www.figma.com/design/mqc0FKzCs3hepP2FW2Ln58/Untitled?node-id=0-1&node-type=canvas&t=K4xzjga9G6JlQnW2-0
 
@@ -99,14 +99,10 @@ const defaultLocations: Poi[] = [
 ];
 
 function App() {
-	const [locations, setLocations] = useState<Poi[]>([]);
-	const locationsRef = useRef(locations);
+	const locationsRef = useRef<Poi[]>([]);
+	const [_, forceUpdate] = useReducer(x => x + 1, 0);
 
-	useEffect(() => {
-		locationsRef.current = locations;
-	}, [locations]);
-
-	const addNewPin = useCallback(
+	const addNewPin = (
 		(
 			latitude: number,
 			longitude: number,
@@ -120,30 +116,31 @@ function App() {
 				description: description || "",
 			};
 
-			const updatedLocations = [...locationsRef.current, newPin];
-			localStorage.setItem("locations", JSON.stringify(updatedLocations));
-			// setLocations(updatedLocations);
-		},
-		[]
+			locationsRef.current.push(newPin);
+			localStorage.setItem("locations", JSON.stringify(locationsRef.current));
+		}
 	);
 
 	useEffect(() => {
 		const storedLocations = localStorage.getItem("locations");
 		if (storedLocations) {
-			setLocations(JSON.parse(storedLocations));
+			forceUpdate();
+			locationsRef.current = JSON.parse(storedLocations);
 			console.log("Loaded Pins!");
-		} else {
+		} 
+		else {
 			localStorage.setItem("locations", JSON.stringify(defaultLocations));
-			setLocations(defaultLocations);
+			forceUpdate();
+			locationsRef.current = defaultLocations;
 			console.log("FIRST LOAD! Saved default Pins and Loaded them!");
 		}
-	}, [localStorage]);
+	}, []);
 
 	return (
 		<>
 			<div className="flex items-center flex-col h-dvh">
 				<Header newPinCB={addNewPin} />
-				<MapComponent locations={locations} />
+				<MapComponent locations={locationsRef} />
 			</div>
 			<Footer />
 		</>

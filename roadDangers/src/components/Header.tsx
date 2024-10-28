@@ -44,13 +44,18 @@ const Header: React.FC<HeaderProps> = ({ newPinCB }) => {
 
 				<button
 					className="flex items-center bg-[#D9D9D9] rounded-xl px-3"
-					onClick={() =>
+					onClick={() => {
+
 						newPinCB(
 							42.699855 + (Math.random() - 0.5) * 0.1, //lat
 							23.311125 + (Math.random() - 0.5) * 0.1, //lng
 							Math.floor(Math.random() * 3), //severity
 							"Random Hole" //description
-						)
+						);
+						
+						window.location.reload();
+					}
+
 					}>
 					{windowWidth < 640 ? "New Hole" : "Add New Hole"} <span className="text-3xl sm:text-5xl">+</span>
 				</button>
