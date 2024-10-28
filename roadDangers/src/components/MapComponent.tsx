@@ -39,6 +39,8 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 	const [markers, setMarkers] = useState<{ [key: string]: Marker }>({});
 	const clusterer = useRef<MarkerClusterer | null>(null);
 	const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null);
+	const [selectedCoordinates, setSelectedCoordinates] = useState<google.maps.LatLngLiteral | null>(null);
+
 
 	// Initialize MarkerClusterer, if the map has changed
 	useEffect(() => {
@@ -68,6 +70,30 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 			}
 		});
 	};
+
+	// Add click event listener to the map
+    useEffect(() => {
+        if (!map) return;
+
+        const handleClick = (event: google.maps.MapMouseEvent) => {
+            if (event.latLng) {
+                const coordinates = {
+                    lat: event.latLng.lat(),
+                    lng: event.latLng.lng(),
+                };
+                setSelectedCoordinates(coordinates);
+            }
+
+			console.log("Clicked on the map at: ", event.latLng?.toJSON());
+        };
+
+        map.addListener('click', handleClick);
+
+        // Cleanup event listener on component unmount
+        return () => {
+            google.maps.event.clearListeners(map, 'click');
+        };
+    }, [map]);
 
 	const backColors = ["#32cd32", "#FBBC04", "#ea4335"];
 	return (

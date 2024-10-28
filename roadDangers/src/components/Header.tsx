@@ -29,7 +29,7 @@ const Header: React.FC<HeaderProps> = ({ newPinCB }) => {
 	return (
 		<header className="flex justify-between w-full font-semibold text-[#344050] px-4 sm:px-8 pt-5">
 			<div className="flex items-center">
-				{window.innerWidth < 640 ? (
+				{windowWidth < 640 ? (
 					<CiMap size={40} />
 				) : (
 					<CiMap size={48} />
