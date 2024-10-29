@@ -1,13 +1,12 @@
 import { CiMap } from "react-icons/ci";
-import { Severity } from "./MapComponent";
+import { Severity } from "./MapComponent2";
 import { useEffect, useState } from "react";
 
 interface HeaderProps {
-	handleAddHoleFlag: () => void;
-	changeCursor: () => void;
+	setModeAddHoleTrue: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ handleAddHoleFlag, changeCursor }) => {
+const Header: React.FC<HeaderProps> = ({ setModeAddHoleTrue }) => {
 	const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
 	useEffect(() => {
@@ -21,7 +20,6 @@ const Header: React.FC<HeaderProps> = ({ handleAddHoleFlag, changeCursor }) => {
 			window.removeEventListener("resize", handleResize);
 		};
 	}, []);
-	
 
 	return (
 		<header className="flex justify-between w-full font-semibold text-[#344050] px-4 sm:px-8 pt-5">
@@ -44,12 +42,11 @@ const Header: React.FC<HeaderProps> = ({ handleAddHoleFlag, changeCursor }) => {
 						// 	Math.floor(Math.random() * 3), //severity
 						// 	"Random Hole" //description
 						// );
-						handleAddHoleFlag();
-
-						changeCursor();
+						setModeAddHoleTrue();
+						console.log("Add Hole Button Clicked");
 					}}>
 					{windowWidth < 640 ? "New Hole" : "Add New Hole"}{" "}
-					<span className="text-3xl sm:text-5xl">+</span>
+					<span className="text-2xl sm:text-3xl">+</span>
 				</button>
 			</div>
 		</header>

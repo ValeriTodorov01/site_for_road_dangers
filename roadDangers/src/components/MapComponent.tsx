@@ -1,18 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import {
-	APIProvider,
-	Map,
-	AdvancedMarker,
-	// MapCameraChangedEvent,
-	useMap,
-	InfoWindow,
-	Pin,
-} from "@vis.gl/react-google-maps";
-import { MarkerClusterer } from "@googlemaps/markerclusterer";
-import type { Marker } from "@googlemaps/markerclusterer";
-import React from "react";
-import AddHolePopup from "./AddHolePopup";
-
+import { Map, useMap } from "@vis.gl/react-google-maps";
+import React, { useCallback, useEffect, useState } from "react";
+import PoiMarkers, { Severity, Poi } from "./PoiMarkers";
+import NewHolePopup from "./NewHolePopup";
+import { time } from "console";
 /*
  *  Poi - Point of Interest
  *  key: unique id, set to the DATE in ISO format
@@ -24,269 +14,84 @@ import AddHolePopup from "./AddHolePopup";
  *  description?: optional string shown in the info popup window
  */
 
-export enum Severity {
-	Low = 0,
-	Medium = 1,
-	High = 2,
-}
-
-export type Poi = {
-	key: string;
-	location: google.maps.LatLngLiteral;
-	severity: Severity;
-	description?: string;
-};
-
 interface MapComponentProps {
 	locations: React.MutableRefObject<Poi[]>;
-	cursor: string;
 	addNewPin: (
 		latitude: number,
 		longitude: number,
 		severity: Severity,
 		description?: string
 	) => void;
-	addHoleFlag: boolean;
-	handleAddHoleFlag: () => void;
+	modeAddHole: boolean;
+	modeAddHoleFalse: () => void;
 }
-
-const PoiMarkers = (props: { pois: Poi[] }) => {
-	const map = useMap();
-	const [markers, setMarkers] = useState<{ [key: string]: Marker }>({});
-	const clusterer = useRef<MarkerClusterer | null>(null);
-	const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null);
-
-	// Initialize MarkerClusterer, if the map has changed
-	useEffect(() => {
-		if (!map) return;
-		if (!clusterer.current) {
-			clusterer.current = new MarkerClusterer({ map });
-		}
-	}, [map]);
-
-	// Update markers, if the array has changed
-	useEffect(() => {
-		clusterer.current?.clearMarkers();
-		clusterer.current?.addMarkers(Object.values(markers));
-	}, [markers]);
-
-	const setMarkerRef = (marker: Marker | null, key: string) => {
-		if (marker && markers[key]) return;
-		if (!marker && !markers[key]) return;
-
-		setMarkers((prev) => {
-			if (marker) {
-				return { ...prev, [key]: marker };
-			} else {
-				const newMarkers = { ...prev };
-				delete newMarkers[key];
-				return newMarkers;
-			}
-		});
-	};
-
-	const backColors = ["#32cd32", "#FBBC04", "#ea4335"];
-	return (
-		<>
-			{props.pois.map((poi: Poi) => (
-				<AdvancedMarker
-					key={poi.key}
-					position={poi.location}
-					ref={(marker) => {
-						setMarkerRef(marker, poi.key);
-						if (marker) {
-							marker.addListener("click", () => {
-								setSelectedPoi(poi);
-							});
-						}
-					}}>
-					{selectedPoi === poi && (
-						<InfoWindow
-							anchor={markers[selectedPoi.key]}
-							onClose={() => setSelectedPoi(null)}
-							headerContent={
-								<>
-									<span
-										style={{
-											fontWeight: "bold",
-											borderTop: `3px solid ${
-												backColors[selectedPoi.severity]
-											}`,
-											borderBottom: `3px solid ${
-												backColors[selectedPoi.severity]
-											}`,
-										}}>
-										{new Date(
-											selectedPoi.key
-										).toDateString()}
-									</span>
-								</>
-							}>
-							{selectedPoi.description && (
-								<div>
-									<span style={{ fontWeight: "bold" }}>
-										Description:
-									</span>
-									<br></br> {poi.description}
-								</div>
-							)}
-						</InfoWindow>
-					)}
-					<Pin
-						background={backColors[poi.severity]}
-						glyphColor={"#000"}
-						borderColor={"#000"}
-					/>
-				</AdvancedMarker>
-			))}
-		</>
-	);
-};
 
 const MapComponent: React.FC<MapComponentProps> = ({
 	locations,
-	cursor,
 	addNewPin,
-	addHoleFlag,
-	handleAddHoleFlag,
+	modeAddHole,
+	modeAddHoleFalse,
 }) => {
-	const [popupCoords, setPopupCoords] = useState<{
-		x: number;
-		y: number;
-	} | null>(null);
-	const [selectedMapCoordinates, setSelectedMapCoordinates] =
-		useState<google.maps.LatLngLiteral | null>(null);
-	const [acceptNewHole, setAcceptNewHole] = useState(false);
+	const [showPopup, setShowPopup] = useState(false);
+	const [mapCoordinates, setMapCoordinates] = useState({ lat: 0, lng: 0 });
 	const map = useMap();
 
-	const handleMapClick = (eventMap: google.maps.MapMouseEvent) => {
-		if (eventMap.latLng) {
-			const coordinates = {
-				lat: eventMap.latLng.lat(),
-				lng: eventMap.latLng.lng(),
-			};
-
-			setSelectedMapCoordinates(coordinates);
+	//TODO: needs relooking
+	const handleEscape = (e: KeyboardEvent) => {
+		if (e.key === "Escape") {
+			console.log("Escape key pressed");
+			modeAddHoleFalse();
+			setShowPopup(false);
 		}
 	};
 
-	const handleClick = (event: MouseEvent) => {
-		// Get the X and Y coordinates of the click
-		const x = event.clientX;
-		const y = event.clientY;
-		setPopupCoords({ x, y });
-	};
-
-	const handleEscape = (event: KeyboardEvent) => {
-		if (event.key === "Escape") {
-			handleAddHoleFlag();
-		}
-	};
-
-	useEffect(() => {
-		if (addHoleFlag && selectedMapCoordinates && acceptNewHole) {
-			console.log("Adding new hole at: ", selectedMapCoordinates);
-			addNewPin(
-				selectedMapCoordinates.lat,
-				selectedMapCoordinates.lng,
-				Severity.Low,
-				"New Hole"
-			);
-		}
-	}, [selectedMapCoordinates, acceptNewHole]);
-
-	// Add or remove event listeners based on the addHoleFlag
+	//Escape key to close the hole detection mode
 	useEffect(() => {
 		if (!map) return;
 
-		const delay = 1; // Delay in milliseconds
+		document.addEventListener("keydown", handleEscape);
+		if (modeAddHole) {
+			map?.addListener("click", (e: google.maps.MapMouseEvent) => {
+				console.log("Map clicked", e.latLng?.lat(), e.latLng?.lng());
+				if (!e.latLng) return;
+				setMapCoordinates({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+				setShowPopup(true);
+				modeAddHoleFalse();
+			});
+		}
 
-		const addListeners = () => {
-			document.addEventListener("keydown", handleEscape);
-			document.addEventListener("click", handleClick);
-			map.addListener("click", handleMapClick);
-			console.log("Event listeners added!");
-		};
-
-		const removeListeners = () => {
-			google.maps.event.clearListeners(map, "click");
-			document.removeEventListener("click", handleClick);
+		return () => {
 			document.removeEventListener("keydown", handleEscape);
-			console.log("Event listeners removed!");
+			google.maps.event.clearListeners(map, "click");
 		};
-
-		const timeoutId = setTimeout(() => {
-			if (addHoleFlag && !popupCoords) {
-				addListeners();
-			} else {
-				removeListeners();
-			}
-		}, delay);
-
-		// Cleanup timeout and event listeners on component unmount
-		return () => {
-			clearTimeout(timeoutId);
-			removeListeners();
-		};
-	}, [map, addHoleFlag, popupCoords]);
-
-	// Handle right mouse button dragging
-	useEffect(() => {
-		if (!map) return;
-
-		const handleMouseDown = (event: MouseEvent) => {
-			if (event.button === 2) {
-				// Right mouse button
-				map.setOptions({ draggable: true });
-			}
-		};
-
-		const handleMouseUp = (event: MouseEvent) => {
-			if (event.button === 2) {
-				// Right mouse button
-				map.setOptions({ draggable: false });
-			}
-		};
-
-		document.addEventListener("mousedown", handleMouseDown);
-		document.addEventListener("mouseup", handleMouseUp);
-
-		// Cleanup event listeners on component unmount
-		return () => {
-			document.removeEventListener("mousedown", handleMouseDown);
-			document.removeEventListener("mouseup", handleMouseUp);
-		};
-	}, [map]);
+	}, [map, modeAddHole]);
 
 	return (
 		<div
 			id="map"
 			className={`flex border-2 border-black ${
-				addHoleFlag
-					? "fixed top-0 left-0 z-20 h-dvh w-dvw"
-					: "h-[80%] w-[90%] mt-8 sm:mt-12"
+				!modeAddHole
+					? "h-[80%] w-[90%] mt-8 sm:mt-12"
+					: "fixed top-0 left-0 z-20 h-dvh w-dvw"
 			}`}>
 			<Map
-				defaultZoom={11}
+				defaultZoom={12}
 				mapId="HOLE_DETECTION"
 				defaultCenter={{ lat: 42.699855, lng: 23.311125 }}
-				draggableCursor={cursor}
-				draggable={!addHoleFlag}
 				// onCameraChanged={ (ev: MapCameraChangedEvent) =>
 				//     console.log('camera changed:', ev.detail.center, 'zoom:', ev.detail.zoom)
 				// }
 			>
 				<PoiMarkers pois={locations.current || []} />
 			</Map>
-
-			{popupCoords && addHoleFlag && (
-				<AddHolePopup
-					x={popupCoords.x}
-					y={popupCoords.y}
+			{showPopup && (
+				<NewHolePopup
 					onClose={() => {
-						setPopupCoords(null);
+						setShowPopup(false);
+						modeAddHoleFalse();
 					}}
-					acceptNewHoleFunc={() => setAcceptNewHole(true)}
+					acceptNewHoleFunc={addNewPin}
+					latlng={mapCoordinates}
 				/>
 			)}
 		</div>

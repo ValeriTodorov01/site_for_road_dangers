@@ -1,8 +1,9 @@
 import Header from "./components/Header";
-import MapComponent, { Poi, Severity } from "./components/MapComponent";
+import { Poi, Severity } from "./components/PoiMarkers";
 import Footer from "./components/Footer";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
+import MapComponent from "./components/MapComponent";
 
 //https://www.figma.com/design/mqc0FKzCs3hepP2FW2Ln58/Untitled?node-id=0-1&node-type=canvas&t=K4xzjga9G6JlQnW2-0
 
@@ -103,7 +104,8 @@ function App() {
 	const locationsRef = useRef<Poi[]>([]);
 	const [_, forceUpdate] = useReducer((x) => x + 1, 0);
 	const [cursor, setCursor] = useState("pointer");
-	const [addHoleFlag, setAddHoleFlag] = useState(false);
+	const [modeAddHole, setModeAddHole] = useState(false);
+	const modeAddHoleRef = useRef(modeAddHole);
 
 	useEffect(() => {
 		const storedLocations = localStorage.getItem("locations");
@@ -118,7 +120,6 @@ function App() {
 			forceUpdate();
 		}
 	}, []);
-
 
 	const addNewPin = (
 		latitude: number,
@@ -136,41 +137,18 @@ function App() {
 		locationsRef.current = [...locationsRef.current, newPin];
 		localStorage.setItem("locations", JSON.stringify(locationsRef.current));
 
-		handleAddHoleFlag();
+		// setModeAddHole(false);
 
 		window.location.reload();
 	};
-
-	const handleCursor = () => {
-		// if (cursor === "pointer") {
-		// 	setCursor(`url("/black_marker.png"), auto`);
-		// } else {
-		// 	setCursor("pointer");
-		// }
-	};
-
-	const handleAddHoleFlag = () => {
-		setAddHoleFlag(!addHoleFlag);
-	};
-
-
 
 	return (
 		<APIProvider apiKey={import.meta.env.VITE_GOOGLE_KEY}>
 			<div
 				className="flex items-center flex-col h-dvh"
 				style={{ cursor: cursor }}>
-				<Header
-					handleAddHoleFlag={handleAddHoleFlag}
-					changeCursor={handleCursor}
-				/>
-				<MapComponent
-					locations={locationsRef}
-					cursor={cursor}
-					addNewPin={addNewPin}
-					addHoleFlag={addHoleFlag}
-					handleAddHoleFlag={handleAddHoleFlag}
-				/>
+				<Header setModeAddHoleTrue={() => setModeAddHole(true)} />
+				<MapComponent locations={locationsRef} addNewPin={addNewPin} modeAddHole={modeAddHole} modeAddHoleFalse={() => {setModeAddHole(false); /*window.location.reload();*/}}/>
 			</div>
 			<Footer />
 		</APIProvider>
