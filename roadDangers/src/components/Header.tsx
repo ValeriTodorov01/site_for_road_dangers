@@ -25,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ setModeAddHoleTrue }) => {
 		<header className="flex justify-between w-full font-semibold text-[#344050] px-4 sm:px-8 pt-5">
 			<div className="flex items-center">
 				{windowWidth < 640 ? <CiMap size={40} /> : <CiMap size={48} />}
-				<h1 className="text-3xl">Name</h1>
+				<h1 className="text-2xl sm:text-3xl">AsphaltAlert</h1>
 			</div>
 
 			<div className="flex flex-col sm:flex-row gap-5">
