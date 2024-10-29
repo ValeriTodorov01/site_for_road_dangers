@@ -3,15 +3,11 @@ import { Severity } from "./MapComponent";
 import { useEffect, useState } from "react";
 
 interface HeaderProps {
-	newPinCB: (
-		latitude: number,
-		longitude: number,
-		severity: Severity,
-		description?: string
-	) => void;
+	handleAddHoleFlag: () => void;
+	changeCursor: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ newPinCB }) => {
+const Header: React.FC<HeaderProps> = ({ handleAddHoleFlag, changeCursor }) => {
 	const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
 	useEffect(() => {
@@ -25,15 +21,12 @@ const Header: React.FC<HeaderProps> = ({ newPinCB }) => {
 			window.removeEventListener("resize", handleResize);
 		};
 	}, []);
+	
 
 	return (
 		<header className="flex justify-between w-full font-semibold text-[#344050] px-4 sm:px-8 pt-5">
 			<div className="flex items-center">
-				{windowWidth < 640 ? (
-					<CiMap size={40} />
-				) : (
-					<CiMap size={48} />
-				)}
+				{windowWidth < 640 ? <CiMap size={40} /> : <CiMap size={48} />}
 				<h1 className="text-3xl">Name</h1>
 			</div>
 
@@ -45,19 +38,18 @@ const Header: React.FC<HeaderProps> = ({ newPinCB }) => {
 				<button
 					className="flex items-center bg-[#D9D9D9] rounded-xl px-3"
 					onClick={() => {
+						// newPinCB(
+						// 	42.699855 + (Math.random() - 0.2) * 0.1, //lat
+						// 	23.311125 + (Math.random() - 0.2) * 0.1, //lng
+						// 	Math.floor(Math.random() * 3), //severity
+						// 	"Random Hole" //description
+						// );
+						handleAddHoleFlag();
 
-						newPinCB(
-							42.699855 + (Math.random() - 0.5) * 0.1, //lat
-							23.311125 + (Math.random() - 0.5) * 0.1, //lng
-							Math.floor(Math.random() * 3), //severity
-							"Random Hole" //description
-						);
-						
-						window.location.reload();
-					}
-
-					}>
-					{windowWidth < 640 ? "New Hole" : "Add New Hole"} <span className="text-3xl sm:text-5xl">+</span>
+						changeCursor();
+					}}>
+					{windowWidth < 640 ? "New Hole" : "Add New Hole"}{" "}
+					<span className="text-3xl sm:text-5xl">+</span>
 				</button>
 			</div>
 		</header>

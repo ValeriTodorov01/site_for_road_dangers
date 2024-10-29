@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	APIProvider,
 	Map,
@@ -10,6 +10,8 @@ import {
 } from "@vis.gl/react-google-maps";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import type { Marker } from "@googlemaps/markerclusterer";
+import React from "react";
+import AddHolePopup from "./AddHolePopup";
 
 /*
  *  Poi - Point of Interest
@@ -21,6 +23,7 @@ import type { Marker } from "@googlemaps/markerclusterer";
  *      - 2: Severity.High      RED color pin
  *  description?: optional string shown in the info popup window
  */
+
 export enum Severity {
 	Low = 0,
 	Medium = 1,
@@ -34,14 +37,24 @@ export type Poi = {
 	description?: string;
 };
 
+interface MapComponentProps {
+	locations: React.MutableRefObject<Poi[]>;
+	cursor: string;
+	addNewPin: (
+		latitude: number,
+		longitude: number,
+		severity: Severity,
+		description?: string
+	) => void;
+	addHoleFlag: boolean;
+	handleAddHoleFlag: () => void;
+}
+
 const PoiMarkers = (props: { pois: Poi[] }) => {
 	const map = useMap();
 	const [markers, setMarkers] = useState<{ [key: string]: Marker }>({});
 	const clusterer = useRef<MarkerClusterer | null>(null);
 	const [selectedPoi, setSelectedPoi] = useState<Poi | null>(null);
-	const [selectedCoordinates, setSelectedCoordinates] = useState<google.maps.LatLngLiteral | null>(null);
-
-
 
 	// Initialize MarkerClusterer, if the map has changed
 	useEffect(() => {
@@ -57,7 +70,6 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 		clusterer.current?.addMarkers(Object.values(markers));
 	}, [markers]);
 
-
 	const setMarkerRef = (marker: Marker | null, key: string) => {
 		if (marker && markers[key]) return;
 		if (!marker && !markers[key]) return;
@@ -70,33 +82,8 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 				delete newMarkers[key];
 				return newMarkers;
 			}
-
 		});
 	};
-
-	// Add click event listener to the map
-    useEffect(() => {
-        if (!map) return;
-
-        const handleClick = (event: google.maps.MapMouseEvent) => {
-            if (event.latLng) {
-                const coordinates = {
-                    lat: event.latLng.lat(),
-                    lng: event.latLng.lng(),
-                };
-                setSelectedCoordinates(coordinates);
-            }
-
-			console.log("Clicked on the map at: ", event.latLng?.toJSON());
-        };
-
-        map.addListener('click', handleClick);
-
-        // Cleanup event listener on component unmount
-        return () => {
-            google.maps.event.clearListeners(map, 'click');
-        };
-    }, [map]);
 
 	const backColors = ["#32cd32", "#FBBC04", "#ea4335"];
 	return (
@@ -156,23 +143,152 @@ const PoiMarkers = (props: { pois: Poi[] }) => {
 	);
 };
 
-const MapComponent = ({ locations }: { locations: React.MutableRefObject<Poi[]> }) => {
+const MapComponent: React.FC<MapComponentProps> = ({
+	locations,
+	cursor,
+	addNewPin,
+	addHoleFlag,
+	handleAddHoleFlag,
+}) => {
+	const [popupCoords, setPopupCoords] = useState<{
+		x: number;
+		y: number;
+	} | null>(null);
+	const [selectedMapCoordinates, setSelectedMapCoordinates] =
+		useState<google.maps.LatLngLiteral | null>(null);
+	const [acceptNewHole, setAcceptNewHole] = useState(false);
+	const map = useMap();
+
+	const handleMapClick = (eventMap: google.maps.MapMouseEvent) => {
+		if (eventMap.latLng) {
+			const coordinates = {
+				lat: eventMap.latLng.lat(),
+				lng: eventMap.latLng.lng(),
+			};
+
+			setSelectedMapCoordinates(coordinates);
+		}
+	};
+
+	const handleClick = (event: MouseEvent) => {
+		// Get the X and Y coordinates of the click
+		const x = event.clientX;
+		const y = event.clientY;
+		setPopupCoords({ x, y });
+	};
+
+	const handleEscape = (event: KeyboardEvent) => {
+		if (event.key === "Escape") {
+			handleAddHoleFlag();
+		}
+	};
+
+	useEffect(() => {
+		if (addHoleFlag && selectedMapCoordinates && acceptNewHole) {
+			console.log("Adding new hole at: ", selectedMapCoordinates);
+			addNewPin(
+				selectedMapCoordinates.lat,
+				selectedMapCoordinates.lng,
+				Severity.Low,
+				"New Hole"
+			);
+		}
+	}, [selectedMapCoordinates, acceptNewHole]);
+
+	// Add or remove event listeners based on the addHoleFlag
+	useEffect(() => {
+		if (!map) return;
+
+		const delay = 1; // Delay in milliseconds
+
+		const addListeners = () => {
+			document.addEventListener("keydown", handleEscape);
+			document.addEventListener("click", handleClick);
+			map.addListener("click", handleMapClick);
+			console.log("Event listeners added!");
+		};
+
+		const removeListeners = () => {
+			google.maps.event.clearListeners(map, "click");
+			document.removeEventListener("click", handleClick);
+			document.removeEventListener("keydown", handleEscape);
+			console.log("Event listeners removed!");
+		};
+
+		const timeoutId = setTimeout(() => {
+			if (addHoleFlag && !popupCoords) {
+				addListeners();
+			} else {
+				removeListeners();
+			}
+		}, delay);
+
+		// Cleanup timeout and event listeners on component unmount
+		return () => {
+			clearTimeout(timeoutId);
+			removeListeners();
+		};
+	}, [map, addHoleFlag, popupCoords]);
+
+	// Handle right mouse button dragging
+	useEffect(() => {
+		if (!map) return;
+
+		const handleMouseDown = (event: MouseEvent) => {
+			if (event.button === 2) {
+				// Right mouse button
+				map.setOptions({ draggable: true });
+			}
+		};
+
+		const handleMouseUp = (event: MouseEvent) => {
+			if (event.button === 2) {
+				// Right mouse button
+				map.setOptions({ draggable: false });
+			}
+		};
+
+		document.addEventListener("mousedown", handleMouseDown);
+		document.addEventListener("mouseup", handleMouseUp);
+
+		// Cleanup event listeners on component unmount
+		return () => {
+			document.removeEventListener("mousedown", handleMouseDown);
+			document.removeEventListener("mouseup", handleMouseUp);
+		};
+	}, [map]);
+
 	return (
-		<div className="flex border-2 border-black h-[80%] w-[90%] mt-8 sm:mt-12">
-			<APIProvider
-				apiKey={import.meta.env.VITE_GOOGLE_KEY}
-				onLoad={() => console.log("Maps API has loaded.")}>
-				<Map
-					defaultZoom={10}
-					mapId="HOE_DETECTION"
-					defaultCenter={{ lat: 42.699855, lng: 23.311125 }}
-					// onCameraChanged={ (ev: MapCameraChangedEvent) =>
-					//     console.log('camera changed:', ev.detail.center, 'zoom:', ev.detail.zoom)
-					// }
-				>
-					<PoiMarkers pois={locations.current || []} />
-				</Map>
-			</APIProvider>
+		<div
+			id="map"
+			className={`flex border-2 border-black ${
+				addHoleFlag
+					? "fixed top-0 left-0 z-20 h-dvh w-dvw"
+					: "h-[80%] w-[90%] mt-8 sm:mt-12"
+			}`}>
+			<Map
+				defaultZoom={11}
+				mapId="HOLE_DETECTION"
+				defaultCenter={{ lat: 42.699855, lng: 23.311125 }}
+				draggableCursor={cursor}
+				draggable={!addHoleFlag}
+				// onCameraChanged={ (ev: MapCameraChangedEvent) =>
+				//     console.log('camera changed:', ev.detail.center, 'zoom:', ev.detail.zoom)
+				// }
+			>
+				<PoiMarkers pois={locations.current || []} />
+			</Map>
+
+			{popupCoords && addHoleFlag && (
+				<AddHolePopup
+					x={popupCoords.x}
+					y={popupCoords.y}
+					onClose={() => {
+						setPopupCoords(null);
+					}}
+					acceptNewHoleFunc={() => setAcceptNewHole(true)}
+				/>
+			)}
 		</div>
 	);
 };
