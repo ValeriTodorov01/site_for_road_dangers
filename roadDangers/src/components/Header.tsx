@@ -1,4 +1,3 @@
-import { CiMap } from "react-icons/ci";
 import { useEffect, useState } from "react";
 
 interface HeaderProps {
@@ -38,12 +37,6 @@ const Header: React.FC<HeaderProps> = ({ setModeAddHoleTrue, setCoords }) => {
 				<button
 					className="flex items-center bg-[#D9D9D9] rounded-xl px-3"
 					onClick={() => {
-						// newPinCB(
-						// 	42.699855 + (Math.random() - 0.2) * 0.1, //lat
-						// 	23.311125 + (Math.random() - 0.2) * 0.1, //lng
-						// 	Math.floor(Math.random() * 3), //severity
-						// 	"Random Hole" //description
-						// );
 						setModeAddHoleTrue();
 						console.log("Add Hole Button Clicked");
 					}}>
