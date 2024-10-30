@@ -1,12 +1,12 @@
 import { CiMap } from "react-icons/ci";
-import { Severity } from "./MapComponent2";
 import { useEffect, useState } from "react";
 
 interface HeaderProps {
 	setModeAddHoleTrue: () => void;
+	setCoords: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ setModeAddHoleTrue }) => {
+const Header: React.FC<HeaderProps> = ({ setModeAddHoleTrue, setCoords }) => {
 	const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
 	useEffect(() => {
@@ -29,7 +29,9 @@ const Header: React.FC<HeaderProps> = ({ setModeAddHoleTrue }) => {
 			</div>
 
 			<div className="flex flex-col sm:flex-row gap-5">
-				<button className="text-white text-sm bg-[#344050] rounded-xl p-3">
+				<button
+					className="text-white text-sm bg-[#344050] rounded-xl p-3"
+					onClick={setCoords}>
 					{windowWidth < 640 ? "Nearby Holes" : "Show Nearby Holes"}
 				</button>
 

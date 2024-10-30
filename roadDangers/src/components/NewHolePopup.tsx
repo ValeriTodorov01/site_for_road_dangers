@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Severity } from "./MapComponent2";
+import { Severity } from "./PoiMarkers";
 
 interface AddHolePopupProps {
 	onClose: () => void;

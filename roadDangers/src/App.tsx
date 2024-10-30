@@ -4,6 +4,8 @@ import Footer from "./components/Footer";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import MapComponent from "./components/MapComponent";
+import { useGeolocated } from "react-geolocated";
+
 
 //https://www.figma.com/design/mqc0FKzCs3hepP2FW2Ln58/Untitled?node-id=0-1&node-type=canvas&t=K4xzjga9G6JlQnW2-0
 
@@ -105,7 +107,10 @@ function App() {
 	const [_, forceUpdate] = useReducer((x) => x + 1, 0);
 	const [cursor, setCursor] = useState("pointer");
 	const [modeAddHole, setModeAddHole] = useState(false);
-	const modeAddHoleRef = useRef(modeAddHole);
+	const { coords, getPosition } = useGeolocated({
+		positionOptions: { enableHighAccuracy: false },
+		userDecisionTimeout: 8000,
+	});
 
 	useEffect(() => {
 		const storedLocations = localStorage.getItem("locations");
@@ -142,13 +147,15 @@ function App() {
 		window.location.reload();
 	};
 
+	useEffect(() => {console.log("Coord updated")}, [coords]);
+
 	return (
 		<APIProvider apiKey={import.meta.env.VITE_GOOGLE_KEY}>
 			<div
 				className="flex items-center flex-col h-dvh"
 				style={{ cursor: cursor }}>
-				<Header setModeAddHoleTrue={() => setModeAddHole(true)} />
-				<MapComponent locations={locationsRef} addNewPin={addNewPin} modeAddHole={modeAddHole} modeAddHoleFalse={() => {setModeAddHole(false); /*window.location.reload();*/}}/>
+				<Header setModeAddHoleTrue={() => setModeAddHole(true)} setCoords={() => {getPosition()}}/>
+				<MapComponent locations={locationsRef} addNewPin={addNewPin} modeAddHole={modeAddHole} modeAddHoleFalse={() => setModeAddHole(false)} defaultMapCoords={coords}/>
 			</div>
 			<Footer />
 		</APIProvider>

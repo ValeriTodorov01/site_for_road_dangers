@@ -1,18 +1,8 @@
 import { Map, useMap } from "@vis.gl/react-google-maps";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import PoiMarkers, { Severity, Poi } from "./PoiMarkers";
 import NewHolePopup from "./NewHolePopup";
-import { time } from "console";
-/*
- *  Poi - Point of Interest
- *  key: unique id, set to the DATE in ISO format
- *  location: object with {lat: number, lng: number} properties
- *  severity: lower means less severe
- *      - 0: Severity.LOW,      GREEN color pin
- *      - 1: Severity.Medium    YELLOW color pin
- *      - 2: Severity.High      RED color pin
- *  description?: optional string shown in the info popup window
- */
+
 
 interface MapComponentProps {
 	locations: React.MutableRefObject<Poi[]>;
@@ -24,6 +14,7 @@ interface MapComponentProps {
 	) => void;
 	modeAddHole: boolean;
 	modeAddHoleFalse: () => void;
+	defaultMapCoords: GeolocationCoordinates | undefined;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -31,40 +22,47 @@ const MapComponent: React.FC<MapComponentProps> = ({
 	addNewPin,
 	modeAddHole,
 	modeAddHoleFalse,
+	defaultMapCoords,
 }) => {
 	const [showPopup, setShowPopup] = useState(false);
 	const [mapCoordinates, setMapCoordinates] = useState({ lat: 0, lng: 0 });
 	const map = useMap();
 
-	//TODO: needs relooking
+	// Get geolocation data
+
+
 	const handleEscape = (e: KeyboardEvent) => {
 		if (e.key === "Escape") {
-			console.log("Escape key pressed");
 			modeAddHoleFalse();
 			setShowPopup(false);
 		}
 	};
 
-	//Escape key to close the hole detection mode
+	// Use effect to handle map clicks and center on user's location when available
 	useEffect(() => {
 		if (!map) return;
 
 		document.addEventListener("keydown", handleEscape);
+
+		// Set initial map center to user's location if available and not already set
+		if (defaultMapCoords) {
+			map.setCenter({ lat: defaultMapCoords.latitude, lng: defaultMapCoords.longitude });
+		}
+
+		// Listener for map click events if in "add hole" mode
 		if (modeAddHole) {
-			map?.addListener("click", (e: google.maps.MapMouseEvent) => {
-				console.log("Map clicked", e.latLng?.lat(), e.latLng?.lng());
+			const clickListener = map.addListener("click", (e: google.maps.MapMouseEvent) => {
 				if (!e.latLng) return;
 				setMapCoordinates({ lat: e.latLng.lat(), lng: e.latLng.lng() });
 				setShowPopup(true);
 				modeAddHoleFalse();
 			});
+			return () => google.maps.event.removeListener(clickListener);
 		}
 
-		return () => {
-			document.removeEventListener("keydown", handleEscape);
-			google.maps.event.clearListeners(map, "click");
-		};
-	}, [map, modeAddHole]);
+		return () => document.removeEventListener("keydown", handleEscape);
+	}, [map, modeAddHole, defaultMapCoords]);
+
 
 	return (
 		<div
@@ -73,14 +71,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
 				!modeAddHole
 					? "h-[80%] w-[90%] mt-8 sm:mt-12"
 					: "fixed top-0 left-0 z-20 h-dvh w-dvw"
-			}`}>
+			}`}
+		>
 			<Map
-				defaultZoom={12}
+				defaultZoom={17}
 				mapId="HOLE_DETECTION"
-				defaultCenter={{ lat: 42.699855, lng: 23.311125 }}
-				// onCameraChanged={ (ev: MapCameraChangedEvent) =>
-				//     console.log('camera changed:', ev.detail.center, 'zoom:', ev.detail.zoom)
-				// }
+				defaultCenter={defaultMapCoords ? { lat: defaultMapCoords.latitude, lng: defaultMapCoords.longitude } : { lat: 42.697624, lng: 23.322315 }}
 			>
 				<PoiMarkers pois={locations.current || []} />
 			</Map>
