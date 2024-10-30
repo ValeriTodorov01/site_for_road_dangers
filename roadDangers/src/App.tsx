@@ -105,7 +105,6 @@ const defaultLocations: Poi[] = [
 function App() {
 	const locationsRef = useRef<Poi[]>([]);
 	const [_, forceUpdate] = useReducer((x) => x + 1, 0);
-	const [cursor, setCursor] = useState("pointer");
 	const [modeAddHole, setModeAddHole] = useState(false);
 	const { coords, getPosition } = useGeolocated({
 		positionOptions: { enableHighAccuracy: false },
@@ -141,9 +140,6 @@ function App() {
 
 		locationsRef.current = [...locationsRef.current, newPin];
 		localStorage.setItem("locations", JSON.stringify(locationsRef.current));
-
-		// setModeAddHole(false);
-
 		window.location.reload();
 	};
 
@@ -152,8 +148,7 @@ function App() {
 	return (
 		<APIProvider apiKey={import.meta.env.VITE_GOOGLE_KEY}>
 			<div
-				className="flex items-center flex-col h-dvh"
-				style={{ cursor: cursor }}>
+				className="flex items-center flex-col h-dvh">
 				<Header setModeAddHoleTrue={() => setModeAddHole(true)} setCoords={() => {getPosition()}}/>
 				<MapComponent locations={locationsRef} addNewPin={addNewPin} modeAddHole={modeAddHole} modeAddHoleFalse={() => setModeAddHole(false)} defaultMapCoords={coords}/>
 			</div>
