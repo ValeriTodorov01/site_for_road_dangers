@@ -38,16 +38,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
 	useEffect(() => {
 		if (!map) return;
 
-		document.addEventListener("keydown", handleEscape);
-
+		
 		// Listener for map click events if in "add hole" mode
 		if (modeAddHole) {
+			document.addEventListener("keydown", handleEscape);
 			const clickListener = map.addListener(
 				"click",
 				(e: google.maps.MapMouseEvent) => {
-					if (!e.latLng) return;
 					setShowPopup(true);
 					modeAddHoleFalse();
+					if (e.latLng) {
+						setMapCoordinates({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+					}
+					else return;
 				}
 			);
 			return () => google.maps.event.removeListener(clickListener);

@@ -143,8 +143,6 @@ function App() {
 		window.location.reload();
 	};
 
-	useEffect(() => {console.log("Coord updated")}, [coords]);
-
 	return (
 		<APIProvider apiKey={import.meta.env.VITE_GOOGLE_KEY}>
 			<div
