@@ -1,6 +1,6 @@
 const Footer = () => {
 	return (
-		<footer className="font-semibold text-[#344050] mt-12 mb-20 px-9">
+		<footer className="font-semibold text-[#344050] mt-12 mb-20 px-14">
 			<div className="flex gap-2 items-center mb-4">
 				<img src="Logo.svg" alt="Logo" className="w-11" />
 				<h1 className="text-3xl">AsphaltAlert</h1>
